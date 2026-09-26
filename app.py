@@ -1,6 +1,7 @@
 import streamlit as st
 import time
 from analyzer import analyze_project
+from report import generate_report, generate_bob_task
 
 st.set_page_config(
     page_title="RepoReady",
@@ -162,6 +163,7 @@ if uploaded_file:
 
         with st.spinner("🔍 Analyzing project..."):
             results = analyze_project(uploaded_file)
+            report = generate_report(results)
 
         st.success("✅ Analysis complete!")
 
@@ -196,18 +198,93 @@ if uploaded_file:
 
         st.divider()
 
-        # Results tabs
-        tab1, tab2, tab3, tab4, tab5 = st.tabs(
+        # Results tabs — Readiness Report is first
+        tab0, tab1, tab2, tab3, tab4, tab5 = st.tabs(
             [
+                "📋 Readiness Report",
                 "📁 Structure",
                 "📄 Docs",
                 "📦 Dependencies",
                 "🧪 Tests",
-                "📝 Dev Notes"
+                "📝 Dev Notes",
             ]
         )
 
-        # Structure
+        # ── Readiness Report ──────────────────────────────────────────────
+        with tab0:
+            score = report["readiness_score"]["score"]
+            max_score = report["readiness_score"]["max"]
+            status = report["readiness_status"]
+            project_type = report["project_type"]
+
+            # Status banner
+            status_icon = {"Ready": "🟢", "Needs Attention": "🟡", "Not Ready": "🔴"}.get(status, "⚪")
+            banner_fn = {"Ready": st.success, "Needs Attention": st.warning, "Not Ready": st.error}.get(
+                status, st.info
+            )
+            banner_fn(
+                f"{status_icon} **{status}** — "
+                f"Readiness score: **{score}/{max_score}** · "
+                f"Project type: **{project_type}**"
+            )
+
+            st.write("")
+
+            # ── Start Here ────────────────────────────────────────────────
+            st.subheader("🚦 Start Here")
+            st.caption(
+                "These are the three most important things to do before making changes to this repository."
+            )
+
+            step_colors = {
+                "FIRST": st.error,
+                "SECOND": st.warning,
+                "THIRD": st.info,
+            }
+
+            for item in report["start_here"]:
+                step_label = item.get("step", "")
+                action = item.get("action", "")
+                reason = item.get("reason", "")
+                render = step_colors.get(step_label, st.info)
+                render(f"**{step_label}: {action}**  \n{reason}")
+
+            st.divider()
+
+            # ── Findings columns ──────────────────────────────────────────
+            col_good, col_concern = st.columns(2)
+
+            with col_good:
+                st.markdown("**✅ What's in good shape**")
+                strengths = report["strengths"]
+                if strengths:
+                    for s in strengths:
+                        st.markdown(f"- {s}")
+                else:
+                    st.caption("No clear strengths detected.")
+
+            with col_concern:
+                st.markdown("**⚠️ What needs attention**")
+                concerns = report["concerns"]
+                if concerns:
+                    for c in concerns:
+                        st.markdown(f"- {c}")
+                else:
+                    st.success("Nothing critical — this repo is well set up.")
+
+            # ── Bob Handoff ───────────────────────────────────────────────
+            st.divider()
+            st.subheader("🤖 Bob Handoff")
+            st.caption(
+                "Paste this task directly into IBM Bob. "
+                "It is generated from the actual analysis findings above — "
+                "not generic advice."
+            )
+
+            bob_task = generate_bob_task(report)
+            st.code(bob_task, language=None)
+
+        # ── Structure ─────────────────────────────────────────────────────
         with tab1:
             st.subheader("Project Structure")
 
@@ -221,7 +298,7 @@ if uploaded_file:
             for file in results["files"]:
                 st.write(f"📄 {file}")
 
-        # Documentation
+        # ── Documentation ─────────────────────────────────────────────────
         with tab2:
             st.subheader("Documentation")
 
@@ -230,7 +307,7 @@ if uploaded_file:
             else:
                 st.warning("README file not found.")
 
-        # Dependencies
+        # ── Dependencies ──────────────────────────────────────────────────
         with tab3:
             st.subheader("Dependencies")
 
@@ -242,7 +319,7 @@ if uploaded_file:
             else:
                 st.warning("No dependency file detected.")
 
-        # Tests
+        # ── Tests ─────────────────────────────────────────────────────────
         with tab4:
             st.subheader("Tests")
 
@@ -256,7 +333,7 @@ if uploaded_file:
             else:
                 st.warning("No test files detected.")
 
-        # Development notes
+        # ── Development Notes ─────────────────────────────────────────────
         with tab5:
             st.subheader("Development Notes")
 
