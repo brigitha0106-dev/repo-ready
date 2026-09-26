@@ -1,7 +1,7 @@
 import streamlit as st
 import time
 from analyzer import analyze_project
-from report import generate_report, generate_bob_task
+from report import generate_report
 
 st.set_page_config(
     page_title="RepoReady",
@@ -272,17 +272,38 @@ if uploaded_file:
                 else:
                     st.success("Nothing critical — this repo is well set up.")
 
-            # ── Bob Handoff ───────────────────────────────────────────────
+            # ── IBM Bob Integration ───────────────────────────────────────
             st.divider()
-            st.subheader("🤖 Bob Handoff")
-            st.caption(
-                "Paste this task directly into IBM Bob. "
-                "It is generated from the actual analysis findings above — "
-                "not generic advice."
+            st.markdown(
+                """
+                <div style="
+                    background:#1e1e2e;
+                    border:1px solid #374151;
+                    border-radius:10px;
+                    padding:1rem 1.2rem;
+                    margin:0.4rem 0 0 0;
+                ">
+                    <p style="margin:0 0 0.4rem 0; font-size:1rem; font-weight:600; color:#e2e8f0;">
+                        🤖 IBM Bob Integration
+                    </p>
+                    <p style="margin:0 0 0.6rem 0; font-size:0.88rem; color:#94a3b8; line-height:1.5;">
+                        RepoReady works with IBM Bob to help developers
+                        understand, investigate, and improve unfamiliar codebases.
+                    </p>
+                    <span style="
+                        display:inline-block;
+                        background:#052e16;
+                        color:#34d399;
+                        border:1px solid #166534;
+                        border-radius:6px;
+                        padding:0.2rem 0.65rem;
+                        font-size:0.78rem;
+                        font-weight:600;
+                    ">&#10003; Connected through MCP</span>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
-
-            bob_task = generate_bob_task(report)
-            st.code(bob_task, language=None)
 
         # ── Structure ─────────────────────────────────────────────────────
         with tab1:
